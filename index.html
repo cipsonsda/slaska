@@ -3,37 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ruda Śląska - Gra Dzielnicowa (Monopoly Online)</title>
+    <title>Ruda Śląska - Monopoly Online</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- PeerJS for Realtime Peer-to-Peer Multiplayer -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     
     <style>
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: #0f172a;
+            background-color: #090d16;
             color: #f8fafc;
             user-select: none;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
         }
 
         /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #1e293b;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #475569;
-            border-radius: 3px;
-        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
 
-        /* Square Board 11x11 Grid Layout */
-        .board-grid {
+        /* Board Container (11x11 Grid Layout) */
+        .board-container {
             display: grid;
             grid-template-columns: 13.5% repeat(9, 8.11%) 13.5%;
             grid-template-rows: 13.5% repeat(9, 8.11%) 13.5%;
@@ -44,7 +41,7 @@
             position: relative;
             background-color: #020617;
             border: 4px solid #f59e0b;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
             border-radius: 12px;
             overflow: hidden;
         }
@@ -55,19 +52,17 @@
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.6rem;
+            font-size: 0.62rem;
             text-align: center;
-            border: 1px solid #334155;
-            background-color: #1e293b;
+            border: 1px solid #1e293b;
+            background-color: #0f172a;
             padding: 2px;
             overflow: hidden;
-            transition: all 0.2s ease;
+            transition: background 0.2s ease, transform 0.2s ease;
         }
 
-        @media (min-width: 768px) {
-            .tile {
-                font-size: 0.72rem;
-            }
+        @media (min-width: 640px) {
+            .tile { font-size: 0.72rem; }
         }
 
         .tile:hover {
@@ -75,88 +70,70 @@
             z-index: 10;
         }
 
-        /* Orientations of tile components based on side */
-        .bottom-tile { flex-direction: column; }
-        .left-tile { flex-direction: row-reverse; }
-        .top-tile { flex-direction: column-reverse; }
-        .right-tile { flex-direction: row; }
+        /* Tile Bar Orientations */
+        .color-bar-bottom, .color-bar-top { width: 100%; height: 20%; }
+        .color-bar-left, .color-bar-right { height: 100%; width: 20%; }
 
-        .color-bar-h {
-            width: 100%;
-            height: 22%;
-        }
-        .color-bar-v {
-            height: 100%;
-            width: 22%;
-        }
-
-        /* Pawn styling */
-        .pawn {
-            width: 20px;
-            height: 20px;
+        /* Dynamic Pawn Styling */
+        .pawn-badge {
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
             border: 2px solid #ffffff;
-            box-shadow: 0 0 6px rgba(0,0,0,0.9);
+            box-shadow: 0 0 6px rgba(0,0,0,0.8);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 9px;
             font-weight: 800;
-            transition: all 0.3s ease-in-out;
-            z-index: 20;
+            color: #ffffff;
+            transition: all 0.2s ease;
         }
 
-        /* Dice Roll Animation */
+        /* Dice Animation */
         @keyframes roll {
             0% { transform: rotate(0deg) scale(1); }
-            50% { transform: rotate(180deg) scale(1.2); }
+            50% { transform: rotate(180deg) scale(1.15); }
             100% { transform: rotate(360deg) scale(1); }
         }
-        .rolling {
-            animation: roll 0.4s ease-in-out infinite;
-        }
+        .rolling { animation: roll 0.35s ease-in-out infinite; }
     </style>
 </head>
 <body class="bg-slate-950 min-h-screen flex flex-col justify-between">
 
-    <!-- TOP HEADER -->
-    <header class="bg-slate-900 border-b border-amber-500/30 px-4 py-3 shadow-md flex justify-between items-center z-30">
+    <!-- HEADER -->
+    <header class="bg-slate-900 border-b border-amber-500/30 px-4 py-2.5 shadow-md flex justify-between items-center z-30">
         <div class="flex items-center space-x-3">
-            <i class="fa-solid font-bold text-amber-400 text-2xl fa-city"></i>
+            <i class="fa-solid fa-building-columns text-amber-400 text-2xl"></i>
             <div>
-                <h1 class="text-xl font-extrabold text-amber-400 tracking-wider">RUDA ŚLĄSKA <span class="text-blue-500">MONOPOLY</span></h1>
-                <p class="text-xs text-slate-400">Edycja Dzielnicowa • Gra Wieloosobowa Online</p>
+                <h1 class="text-lg md:text-xl font-extrabold text-amber-400 tracking-wider">RUDA ŚLĄSKA <span class="text-blue-500">MONOPOLY</span></h1>
+                <p class="text-[10px] md:text-xs text-slate-400">Edycja Dzielnicowa • Gra Wieloosobowa & Boty</p>
             </div>
         </div>
-        <div id="room-info" class="hidden flex items-center space-x-4 bg-slate-800 px-4 py-1.5 rounded-lg border border-slate-700">
-            <div>
-                <span class="text-xs text-slate-400 block font-semibold">KOD POKOJU:</span>
-                <span id="display-room-code" class="text-lg font-mono font-bold text-amber-400 tracking-wider">------</span>
-            </div>
-            <button onclick="copyRoomCode()" class="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1.5 rounded text-slate-200 transition" title="Kopiuj kod pokoju">
-                <i class="fa-regular fa-copy"></i>
-            </button>
+        <div id="room-status-badge" class="hidden flex items-center space-x-2 bg-slate-800 px-3 py-1 rounded-lg border border-slate-700">
+            <span class="text-xs text-slate-400 font-semibold">POKÓJ:</span>
+            <span id="display-room-code" class="text-sm font-mono font-bold text-amber-400">------</span>
         </div>
     </header>
 
-    <!-- MAIN GAME CONTAINER -->
+    <!-- MAIN CONTAINER -->
     <main class="flex-1 flex flex-col lg:flex-row p-2 md:p-4 gap-4 max-w-7xl mx-auto w-full items-start justify-center">
 
-        <!-- LOBBY / INITIAL SETUP SCREEN -->
-        <div id="lobby-screen" class="w-full max-w-md mx-auto my-auto bg-slate-900 border-2 border-amber-500/50 p-6 rounded-2xl shadow-2xl mt-8">
-            <h2 class="text-2xl font-extrabold text-center mb-1 text-amber-400"><i class="fa-solid fa-building-flag text-blue-500 mr-2"></i>Witaj w Rudzie Śląskiej!</h2>
-            <p class="text-xs text-slate-400 text-center mb-6">Gra toczy się na tradycyjnej kwadratowej pętli wokół dzielnic Rudy Śląskiej.</p>
+        <!-- LOBBY & SETUP MODAL / SCREEN -->
+        <div id="lobby-screen" class="w-full max-w-lg mx-auto my-auto bg-slate-900 border-2 border-amber-500/50 p-6 rounded-2xl shadow-2xl mt-4">
+            <h2 class="text-2xl font-extrabold text-center mb-1 text-amber-400"><i class="fa-solid fa-city text-blue-500 mr-2"></i>Witaj w Rudzie Śląskiej!</h2>
+            <p class="text-xs text-slate-400 text-center mb-6">Wybierz tryb gry, podaj swoją nazwę i podbij śląskie dzielnice!</p>
 
             <div class="space-y-4">
                 <div>
                     <label class="block text-xs text-slate-400 mb-1 font-semibold">TWÓJ NICK (NAZWA GRACZA)</label>
-                    <input type="text" id="player-name-input" placeholder="np. Hanys, Karlik, Zyga..." maxlength="15"
+                    <input type="text" id="player-name-input" value="Karlik" placeholder="np. Karlik, Hanys, Gustlik..." maxlength="15"
                         class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-amber-300 font-bold focus:outline-none focus:border-amber-400">
                 </div>
 
                 <div>
-                    <label class="block text-xs text-slate-400 mb-1 font-semibold">WYBIERZ KOLOR AWATARA / PIONKA</label>
-                    <div class="flex space-x-3 justify-center py-2" id="color-selector">
+                    <label class="block text-xs text-slate-400 mb-1 font-semibold">WYBIERZ KOLOR AWATARA</label>
+                    <div class="flex space-x-3 justify-center py-1" id="color-selector">
                         <button onclick="selectColor('#ef4444')" class="color-opt w-9 h-9 rounded-full bg-red-500 border-2 border-white focus:ring-2 ring-amber-400" data-color="#ef4444"></button>
                         <button onclick="selectColor('#3b82f6')" class="color-opt w-9 h-9 rounded-full bg-blue-500 border-2 border-transparent focus:ring-2 ring-amber-400" data-color="#3b82f6"></button>
                         <button onclick="selectColor('#10b981')" class="color-opt w-9 h-9 rounded-full bg-emerald-500 border-2 border-transparent focus:ring-2 ring-amber-400" data-color="#10b981"></button>
@@ -165,68 +142,101 @@
                     </div>
                 </div>
 
-                <hr class="border-slate-800 my-4">
+                <hr class="border-slate-800 my-2">
 
-                <div class="grid grid-cols-2 gap-3">
-                    <button onclick="createNewGame()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3 px-4 rounded-xl shadow-lg transition flex flex-col items-center justify-center">
-                        <i class="fa-solid fa-plus text-lg mb-1"></i>
-                        <span>STWÓRZ POKÓJ</span>
-                    </button>
-                    <button onclick="showJoinInput()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition flex flex-col items-center justify-center">
-                        <i class="fa-solid fa-right-to-bracket text-lg mb-1"></i>
-                        <span>DOŁĄCZ DO POKOJU</span>
+                <!-- Room Code Join Input -->
+                <div class="flex gap-2">
+                    <input type="text" id="join-room-code" placeholder="KOD POKOJU (np. RUDA-7391)" maxlength="12"
+                        class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono font-bold text-amber-300 uppercase focus:outline-none focus:border-amber-400">
+                    <button onclick="joinOnlineGame()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition">
+                        DOŁĄCZ
                     </button>
                 </div>
 
-                <div id="join-room-container" class="hidden space-y-2 pt-2">
-                    <input type="text" id="room-code-input" placeholder="Wpisz 6-cyfrowy kod pokoju" maxlength="6"
-                        class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-center tracking-widest font-mono text-amber-300 font-bold uppercase focus:outline-none focus:border-blue-500">
-                    <button onclick="joinGame()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg transition shadow">
-                        WEJDŹ DO GRY
+                <!-- Game Modes -->
+                <div class="space-y-2">
+                    <button onclick="createNewOnlineGame()" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold py-3 px-4 rounded-xl shadow-lg transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-wifi text-lg"></i>
+                        <span>STWÓRZ POKÓJ ONLINE DLA ZNAJOMYCH</span>
+                    </button>
+                    <button onclick="startQuickGame(1)" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl shadow transition flex items-center justify-center space-x-2 text-xs">
+                        <i class="fa-solid fa-robot"></i>
+                        <span>GRAJ Z BOTAMI (OFFLINE)</span>
+                    </button>
+                    <button onclick="startQuickGame(0)" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 px-4 rounded-xl shadow transition flex items-center justify-center space-x-2 text-xs">
+                        <i class="fa-solid fa-users"></i>
+                        <span>GRA LOKALNA (1 URZĄDZENIE)</span>
                     </button>
                 </div>
             </div>
         </div>
 
+        <!-- ONLINE ROOM WAITING LOBBY -->
+        <div id="room-lobby-screen" class="hidden w-full max-w-lg mx-auto my-auto bg-slate-900 border-2 border-amber-500 p-6 rounded-2xl shadow-2xl mt-4 text-center">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">POCZEKALNIA POKOJU</h3>
+            <div class="flex items-center justify-center space-x-2 mb-4">
+                <span id="room-code-val" class="text-3xl font-black font-mono text-amber-400 tracking-wider">------</span>
+                <button onclick="copyRoomCode()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-2 rounded-lg text-xs" title="Kopiuj Kod">
+                    <i class="fa-solid fa-copy"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-400 mb-4">Udostępnij kod znajomemu lub dodaj boty komputerowe do rozgrywki!</p>
+
+            <div id="lobby-players-list" class="space-y-2 mb-6">
+                <!-- Players in lobby populated here -->
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <button id="btn-add-bot" onclick="addBotToRoom()" class="bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold py-2 rounded-xl text-xs border border-slate-700">
+                    <i class="fa-solid fa-robot mr-1"></i> DODAJ BOTA
+                </button>
+                <button id="btn-remove-bot" onclick="removeBotFromRoom()" class="bg-slate-800 hover:bg-slate-700 text-red-400 font-bold py-2 rounded-xl text-xs border border-slate-700">
+                    <i class="fa-solid fa-user-minus mr-1"></i> USUŃ BOTA
+                </button>
+            </div>
+
+            <button id="btn-start-room" onclick="launchRoomGame(true)" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3 rounded-xl shadow-lg transition text-sm">
+                <i class="fa-solid fa-play mr-2"></i> ROZPOCZNIJ GRĘ
+            </button>
+        </div>
+
         <!-- GAMEPLAY SCREEN -->
         <div id="game-screen" class="hidden w-full flex flex-col lg:flex-row gap-4 items-center lg:items-start justify-center">
 
-            <!-- BOARD CONTAINER (11x11 Grid Perimeter) -->
+            <!-- 11x11 BOARD GRID -->
             <div class="w-full lg:w-auto flex-1 flex justify-center items-center relative">
-                <div id="board" class="board-grid">
-                    <!-- Dynamic 40 Tiles mapped around perimeter -->
+                <div id="board" class="board-container">
+                    <!-- Dynamic Tiles (0 to 39) -->
 
-                    <!-- CENTER BOARD CONTENT (Rows 2 to 10, Cols 2 to 10) -->
-                    <div class="col-start-2 col-span-9 row-start-2 row-span-9 bg-slate-900/95 flex flex-col justify-between p-4 relative overflow-hidden">
+                    <!-- CENTER AREA (Grid span: rows 2-10, cols 2-10) -->
+                    <div class="col-start-2 col-span-9 row-start-2 row-span-9 bg-slate-900/95 flex flex-col justify-between p-3 md:p-4 relative overflow-hidden border border-slate-800">
                         
-                        <!-- Logo & Details in Center -->
-                        <div class="text-center mt-2">
-                            <h2 class="text-2xl md:text-3xl font-black text-amber-400 tracking-wider">RUDA ŚLĄSKA</h2>
-                            <p class="text-xs text-blue-400 font-bold tracking-widest uppercase">Kwadratowa Gra Dzielnicowa</p>
-                            <div class="flex justify-center items-center space-x-2 my-2 text-slate-500 text-xs">
-                                <span>Orzegów</span> • <span>Godula</span> • <span>Ruda</span> • <span>Chebzie</span> • <span>Wirek</span> • <span>Halemba</span>
-                            </div>
+                        <!-- Header Logo -->
+                        <div class="text-center mt-1">
+                            <h2 class="text-xl md:text-3xl font-black text-amber-400 tracking-wider">RUDA ŚLĄSKA</h2>
+                            <p class="text-[10px] md:text-xs text-blue-400 font-bold tracking-widest uppercase">Gra Dzielnicowa • Obwód 40 Pól</p>
                         </div>
 
-                        <!-- Current Turn Banner -->
-                        <div id="turn-banner" class="bg-slate-800/90 border border-amber-500/40 rounded-xl p-3 text-center my-auto shadow-lg">
-                            <span class="text-xs text-slate-400 uppercase tracking-wider block font-semibold">TURA GRACZA</span>
-                            <span id="current-player-name" class="text-lg md:text-xl font-extrabold text-amber-300">Oczekiwanie na graczy...</span>
+                        <!-- Current Turn Info -->
+                        <div id="turn-banner" class="bg-slate-800/90 border border-amber-500/40 rounded-xl p-2.5 text-center my-auto shadow-md">
+                            <span class="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">TURA GRACZA</span>
+                            <span id="current-player-name" class="text-base md:text-lg font-extrabold text-amber-300">Karlik</span>
                         </div>
 
-                        <!-- Dice & Action Controls -->
-                        <div class="flex flex-col items-center space-y-3 mb-2">
-                            <div class="flex items-center space-x-4">
-                                <div id="dice-1" class="w-12 h-12 bg-slate-100 text-slate-900 rounded-xl flex items-center justify-center text-2xl font-black shadow-lg border-2 border-amber-500">1</div>
-                                <div id="dice-2" class="w-12 h-12 bg-slate-100 text-slate-900 rounded-xl flex items-center justify-center text-2xl font-black shadow-lg border-2 border-amber-500">1</div>
+                        <!-- Dice & Main Action Buttons -->
+                        <div class="flex flex-col items-center space-y-2 mb-1">
+                            <div class="flex items-center space-x-3">
+                                <div id="dice-1" class="w-10 h-10 md:w-12 md:h-12 bg-slate-100 text-slate-900 rounded-xl flex items-center justify-center text-xl md:text-2xl font-black shadow-lg border-2 border-amber-500">1</div>
+                                <div id="dice-2" class="w-10 h-10 md:w-12 md:h-12 bg-slate-100 text-slate-900 rounded-xl flex items-center justify-center text-xl md:text-2xl font-black shadow-lg border-2 border-amber-500">1</div>
                             </div>
 
                             <div class="flex flex-wrap justify-center gap-2">
-                                <button id="btn-roll" onclick="rollDiceAction()" class="bg-amber-500 hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-black py-2.5 px-6 rounded-xl shadow-lg transition transform active:scale-95 text-sm">
-                                    <i class="fa-solid fa-dice mr-1.5"></i> RZUĆ KOŚĆMI
+                                <button id="btn-roll" onclick="rollDiceAction()" class="bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-slate-950 font-black py-2 px-5 rounded-xl shadow-lg transition text-xs md:text-sm">
+                                    <i class="fa-solid fa-dice mr-1"></i> RZUĆ KOŚĆMI
                                 </button>
-                                <button id="btn-end-turn" onclick="endTurnAction()" disabled class="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-2.5 px-4 rounded-xl shadow-lg transition text-sm">
-                                    ZAKOŃCZ TURĘ <i class="fa-solid fa-forward ml-1.5"></i>
+                                <button id="btn-end-turn" onclick="endTurnAction()" disabled class="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-bold py-2 px-4 rounded-xl shadow-lg transition text-xs md:text-sm">
+                                    ZAKOŃCZ TURĘ <i class="fa-solid fa-forward ml-1"></i>
                                 </button>
                             </div>
                         </div>
@@ -235,55 +245,54 @@
                 </div>
             </div>
 
-            <!-- SIDEBAR: CONTROL PANEL, PLAYERS & LOGS -->
-            <div class="w-full lg:w-96 flex flex-col space-y-4">
+            <!-- SIDEBAR CONTROL PANEL -->
+            <div class="w-full lg:w-80 flex flex-col space-y-3">
 
-                <!-- ROOM STATUS & PLAYERS -->
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
-                    <div class="flex justify-between items-center mb-3">
-                        <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider"><i class="fa-solid fa-users mr-2"></i>Gracze w grze</h3>
-                        <span id="player-count" class="text-xs bg-slate-800 px-2 py-0.5 rounded text-slate-300 font-mono">1/4</span>
+                <!-- PLAYERS STATUS LIST -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-xl">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider"><i class="fa-solid fa-users mr-1.5"></i>Gracze</h3>
+                        <span id="player-count" class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300 font-mono">1/4</span>
                     </div>
-                    <div id="players-list" class="space-y-2">
-                        <!-- Player List Dynamic -->
+                    <div id="players-list" class="space-y-1.5">
+                        <!-- Dynamic list -->
                     </div>
                 </div>
 
-                <!-- SELECTED PROPERTY CARD -->
-                <div id="tile-info-card" class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl relative min-h-[160px] flex flex-col justify-between">
+                <!-- SELECTED TILE ACTION CARD -->
+                <div id="tile-info-card" class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-xl min-h-[150px] flex flex-col justify-between">
                     <div>
                         <div class="flex justify-between items-start mb-1">
-                            <span id="tile-type-tag" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 uppercase">POLE</span>
+                            <span id="tile-type-tag" class="text-[9px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 uppercase">POLE</span>
                             <span id="tile-price-tag" class="text-xs font-mono font-bold text-emerald-400"></span>
                         </div>
-                        <h4 id="tile-title" class="text-base font-bold text-slate-100">Kliknij pole na planszy, aby zobaczyć szczegóły</h4>
-                        <p id="tile-desc" class="text-xs text-slate-400 mt-1">Kliknij dowolne pole wokół planszy, aby sprawdzić właściciela, czynsz i możliwości rozbudowy.</p>
+                        <h4 id="tile-title" class="text-sm font-bold text-slate-100">Kliknij pole na planszy</h4>
+                        <p id="tile-desc" class="text-[11px] text-slate-400 mt-1">Zobacz szczegóły, właściciela, czynsz i opcje rozbudowy.</p>
                     </div>
 
-                    <!-- Dynamic Property Actions (Buy / Upgrade) -->
-                    <div id="tile-actions" class="mt-3 flex gap-2">
-                        <!-- Buttons populated dynamically -->
+                    <div id="tile-actions" class="mt-2 flex flex-col gap-1.5">
+                        <!-- Buy / Upgrade buttons -->
                     </div>
                 </div>
 
-                <!-- TRADE BUTTON -->
+                <!-- TRADE ACTION BUTTON -->
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-xl flex justify-between items-center">
                     <div>
-                        <h4 class="text-xs font-bold text-amber-400">BEZPIECZNY HANDEL</h4>
-                        <p class="text-[11px] text-slate-400">Wymieniaj się bez ryzyka kradzieży</p>
+                        <h4 class="text-xs font-bold text-amber-400">BEZPIECZNA WYMIANA</h4>
+                        <p class="text-[10px] text-slate-400">Handel bez ryzyka kradzieży</p>
                     </div>
-                    <button onclick="openTradeModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-3 rounded-lg shadow transition flex items-center">
-                        <i class="fa-solid fa-handshake mr-1.5"></i> PROPONUJ
+                    <button onclick="openTradeModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow transition">
+                        <i class="fa-solid fa-handshake mr-1"></i> HANDEL
                     </button>
                 </div>
 
                 <!-- GAME LOG -->
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex-1 flex flex-col min-h-[180px]">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-xl flex-1 flex flex-col min-h-[160px]">
                     <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center">
-                        <i class="fa-solid fa-list-ul mr-2 text-amber-400"></i> Dziennik Gry (Śląski Log)
+                        <i class="fa-solid fa-list-ul mr-1.5 text-amber-400"></i> Dziennik Zdarzeń
                     </h3>
-                    <div id="game-log" class="flex-1 bg-slate-950 rounded-xl p-3 text-xs font-mono text-slate-300 space-y-1.5 overflow-y-auto max-h-48 border border-slate-800/80">
-                        <div class="text-amber-400/80">[System] Witamy w Rudzie Śląskiej! Gra gotowa.</div>
+                    <div id="game-log" class="flex-1 bg-slate-950 rounded-xl p-2.5 text-[11px] font-mono text-slate-300 space-y-1 overflow-y-auto max-h-40 border border-slate-800/80">
+                        <div class="text-amber-400/80">[System] Gra gotowa. Rzuć kośćmi!</div>
                     </div>
                 </div>
 
@@ -294,172 +303,129 @@
 
     <!-- TRADE MODAL -->
     <div id="trade-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border-2 border-indigo-500/50 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
-            <button onclick="closeTradeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-            
-            <h3 class="text-lg font-bold text-indigo-400 mb-1"><i class="fa-solid fa-handshake mr-2"></i>Propozycja Wymiany</h3>
-            <p class="text-xs text-slate-400 mb-4">Wybierz gracza, gotówkę oraz posiadłości do uczciwej wymiany za zgodą obu stron.</p>
+        <div class="bg-slate-900 border-2 border-indigo-500/50 rounded-2xl max-w-lg w-full p-5 shadow-2xl relative">
+            <button onclick="closeTradeModal()" class="absolute top-3 right-3 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h3 class="text-base font-bold text-indigo-400 mb-1"><i class="fa-solid fa-handshake mr-2"></i>Wymiana Posiadłości</h3>
+            <p class="text-xs text-slate-400 mb-3">Złóż propozycję. Wymiana dochodzi do skutku po akceptacji.</p>
 
-            <div class="space-y-4">
+            <div class="space-y-3">
                 <div>
-                    <label class="block text-xs text-slate-400 mb-1 font-semibold">WYBIERZ PARTNERA HANDLOWEGO</label>
+                    <label class="block text-[11px] text-slate-400 mb-1 font-semibold">PARTNER DO WYMIANY</label>
                     <select id="trade-target-player" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-slate-200">
                         <!-- Populated dynamically -->
                     </select>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <!-- My Offer -->
-                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                        <h4 class="text-xs font-bold text-amber-400 mb-2">TY DAJESZ:</h4>
-                        <div class="mb-2">
-                            <label class="text-[10px] text-slate-400">Gotówka (PLN):</label>
-                            <input type="number" id="trade-my-money" value="0" min="0" class="w-full bg-slate-800 border border-slate-700 rounded p-1 text-xs text-emerald-400 font-mono">
-                        </div>
-                        <div class="text-[10px] text-slate-400 mb-1">Twoje posiadłości:</div>
-                        <div id="trade-my-properties" class="space-y-1 max-h-32 overflow-y-auto text-xs">
-                            <!-- Checkboxes -->
-                        </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                        <h4 class="text-xs font-bold text-amber-400 mb-1">OFFERUJESZ:</h4>
+                        <input type="number" id="trade-my-money" value="0" min="0" class="w-full bg-slate-800 border border-slate-700 rounded p-1 text-xs text-emerald-400 mb-2">
+                        <div id="trade-my-properties" class="space-y-1 max-h-28 overflow-y-auto text-xs"></div>
                     </div>
-
-                    <!-- Target Request -->
-                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                        <h4 class="text-xs font-bold text-indigo-400 mb-2">TY CHCESZ:</h4>
-                        <div class="mb-2">
-                            <label class="text-[10px] text-slate-400">Gotówka (PLN):</label>
-                            <input type="number" id="trade-target-money" value="0" min="0" class="w-full bg-slate-800 border border-slate-700 rounded p-1 text-xs text-emerald-400 font-mono">
-                        </div>
-                        <div class="text-[10px] text-slate-400 mb-1">Posiadłości partnera:</div>
-                        <div id="trade-target-properties" class="space-y-1 max-h-32 overflow-y-auto text-xs">
-                            <!-- Checkboxes -->
-                        </div>
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                        <h4 class="text-xs font-bold text-indigo-400 mb-1">OCZEKUJESZ:</h4>
+                        <input type="number" id="trade-target-money" value="0" min="0" class="w-full bg-slate-800 border border-slate-700 rounded p-1 text-xs text-emerald-400 mb-2">
+                        <div id="trade-target-properties" class="space-y-1 max-h-28 overflow-y-auto text-xs"></div>
                     </div>
                 </div>
 
-                <button onclick="sendTradeOffer()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl transition text-sm shadow-lg">
-                    WYŚLIJ PROPOZYCJĘ WYMIANY
+                <button onclick="sendTradeOffer()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl text-xs transition">
+                    WYŚLIJ PROPOZYCJĘ
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- INCOMING TRADE PROPOSAL MODAL -->
+    <!-- INCOMING TRADE MODAL -->
     <div id="incoming-trade-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border-2 border-amber-500 rounded-2xl max-w-md w-full p-6 shadow-2xl text-center">
-            <i class="fa-solid fa-scale-balanced text-4xl text-amber-400 mb-2"></i>
-            <h3 class="text-lg font-bold text-slate-100">Otrzymano Propozycję Handlową!</h3>
-            <p id="trade-proposal-text" class="text-xs text-slate-300 my-4 bg-slate-950 p-3 rounded-xl border border-slate-800 text-left font-mono">
-                <!-- Proposal Details -->
-            </p>
-
-            <div class="grid grid-cols-2 gap-3">
-                <button onclick="acceptTrade()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-sm transition">
-                    <i class="fa-solid fa-check mr-1"></i> ZAGADZAM SIĘ
-                </button>
-                <button onclick="rejectTrade()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-xl text-sm transition">
-                    <i class="fa-solid fa-xmark mr-1"></i> ODRZUCAM
-                </button>
+        <div class="bg-slate-900 border-2 border-amber-500 rounded-2xl max-w-md w-full p-5 shadow-2xl text-center">
+            <h3 class="text-base font-bold text-slate-100 mb-2">Propozycja Wymiany!</h3>
+            <p id="trade-proposal-text" class="text-xs text-slate-300 mb-4 bg-slate-950 p-3 rounded-xl border border-slate-800 text-left font-mono"></p>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="acceptTrade()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-xs">AKCEPTUJ</button>
+                <button onclick="rejectTrade()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-xl text-xs">ODRZUĆ</button>
             </div>
         </div>
     </div>
 
-    <!-- FIREBASE SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Firebase Configuration & Initialization
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'ruda-slaska-monopoly';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "demo",
-            authDomain: "demo.firebaseapp.com",
-            projectId: "demo",
-            storageBucket: "demo.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:demo"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        let currentUser = null;
-        let roomCode = null;
-        let gameState = null;
-        let unsubRoom = null;
-        let selectedColor = '#ef4444';
-
-        // TRADITIONAL 40-TILE TRADITIONAL MONOPOLY LOOP FOR RUDA ŚLĄSKA
-        // Tile Index: 0 to 10 (Bottom edge: Right to Left), 10 to 20 (Left edge: Bottom to Top), 
-        // 20 to 30 (Top edge: Left to Right), 30 to 39 (Right edge: Top to Bottom)
+    <!-- GAME LOGIC -->
+    <script>
+        // TRADITIONAL 40-TILE BOARD FOR RUDA ŚLĄSKA
         const BOARD_TILES = [
-            // BOTTOM SIDE (0 - 10)
-            { id: 0, name: "START", type: "start", price: 0, color: null, desc: "Pobierz 200 PLN po przejściu." },
-            { id: 1, name: "Szyb Mikołaj", type: "property", district: "Orzegów", price: 60, rent: 2, color: "#8b4513", housePrice: 50 },
-            { id: 2, name: "Kasa Dzielnicowa", type: "chest", price: 0, color: null, desc: "Bierz kartę ze Śląskiej Kasy." },
-            { id: 3, name: "Osiedle Ksawery", type: "property", district: "Orzegów", price: 60, rent: 4, color: "#8b4513", housePrice: 50 },
-            { id: 4, name: "Podatek Miejski", type: "tax", price: 200, color: null, desc: "Zapłać 200 PLN do Urzędu." },
-            { id: 5, name: "Koleje Śląskie", type: "station", price: 200, rent: 25, color: "#64748b", desc: "Dworzec Kolejowy." },
+            // BOTTOM SIDE (0 -> 10)
+            { id: 0, name: "START", type: "start", price: 0, desc: "Pobierz 200 PLN po przejściu przez Start." },
+            { id: 1, name: "Szyb Mikołaj", type: "property", district: "Orzegów", price: 60, rent: 4, color: "#955251", housePrice: 50 },
+            { id: 2, name: "Kasa Dzielnicowa", type: "chest", price: 0, desc: "Bierz kartę ze Śląskiej Kasy." },
+            { id: 3, name: "Osiedle Ksawery", type: "property", district: "Orzegów", price: 60, rent: 4, color: "#955251", housePrice: 50 },
+            { id: 4, name: "Podatek Miejski", type: "tax", price: 200, desc: "Zapłać 200 PLN podatku." },
+            { id: 5, name: "Dworzec Chebzie", type: "station", price: 200, rent: 25, color: "#64748b", desc: "Węzeł kolejowy." },
             { id: 6, name: "Szpital Miejski", type: "property", district: "Godula", price: 100, rent: 6, color: "#38bdf8", housePrice: 50 },
-            { id: 7, name: "Gryfne Szanse", type: "chance", price: 0, color: null, desc: "Ciągnij kartę szansy." },
+            { id: 7, name: "Gryfne Szanse", type: "chance", price: 0, desc: "Karta Gryfnej Szansy." },
             { id: 8, name: "Park Dworski", type: "property", district: "Godula", price: 100, rent: 6, color: "#38bdf8", housePrice: 50 },
             { id: 9, name: "Kościół Św. Pawła", type: "property", district: "Godula", price: 120, rent: 8, color: "#38bdf8", housePrice: 50 },
-            { id: 10, name: "WIĘZIENIE / ODWIEDZINY", type: "jail", price: 0, color: null, desc: "Tylko składasz wizytę." },
+            { id: 10, name: "WIĘZIENIE / ODWIEDZINY", type: "jail", price: 0, desc: "Tylko składanie wizyty." },
 
-            // LEFT SIDE (11 - 19)
+            // LEFT SIDE (11 -> 20)
             { id: 11, name: "Muzeum Miejskie", type: "property", district: "Ruda", price: 140, rent: 10, color: "#d946ef", housePrice: 100 },
             { id: 12, name: "Śląskie Wodociągi", type: "utility", price: 150, color: "#f59e0b", desc: "Dostawca wody." },
             { id: 13, name: "Młyn Majera", type: "property", district: "Ruda", price: 140, rent: 10, color: "#d946ef", housePrice: 100 },
-            { id: 14, name: "Zamkowa", type: "property", district: "Ruda", price: 160, rent: 12, color: "#d946ef", housePrice: 100 },
-            { id: 15, name: "Tramwaje Śląskie (Linia 9)", type: "station", price: 200, rent: 25, color: "#64748b", desc: "Zajezdnia tramwajowa." },
-            { id: 16, name: "Dworzec Chebzie", type: "property", district: "Chebzie", price: 180, rent: 14, color: "#f97316", housePrice: 100 },
-            { id: 17, name: "Kasa Dzielnicowa", type: "chest", price: 0, color: null, desc: "Bierz kartę ze Śląskiej Kasy." },
-            { id: 18, name: "Pętla Tramwajowa", type: "property", district: "Chebzie", price: 180, rent: 14, color: "#f97316", housePrice: 100 },
-            { id: 19, name: "Koksownia Jadwiga", type: "property", district: "Chebzie", price: 200, rent: 16, color: "#f97316", housePrice: 100 },
+            { id: 14, name: "Ulica Zamkowa", type: "property", district: "Ruda", price: 160, rent: 12, color: "#d946ef", housePrice: 100 },
+            { id: 15, name: "Tramwaj Linia 9", type: "station", price: 200, rent: 25, color: "#64748b", desc: "Tramwaj Śląski." },
+            { id: 16, name: "Pętla Chebzie", type: "property", district: "Chebzie", price: 180, rent: 14, color: "#f97316", housePrice: 100 },
+            { id: 17, name: "Kasa Dzielnicowa", type: "chest", price: 0, desc: "Bierz kartę ze Śląskiej Kasy." },
+            { id: 18, name: "Koksownia Jadwiga", type: "property", district: "Chebzie", price: 180, rent: 14, color: "#f97316", housePrice: 100 },
+            { id: 19, name: "Stary Szyb", type: "property", district: "Chebzie", price: 200, rent: 16, color: "#f97316", housePrice: 100 },
+            { id: 20, name: "BEZPŁATNY PARKING", type: "parking", price: 0, desc: "Odpoczynek na parkingu." },
 
-            // TOP SIDE (20 - 30)
-            { id: 20, name: "DARMOWY PARKING", type: "parking", price: 0, color: null, desc: "Darmowy postój na śląsku." },
-            { id: 21, name: "Wielki Piec Huty Pokój", type: "property", district: "Nowy Bytom", price: 220, rent: 18, color: "#ef4444", housePrice: 150 },
-            { id: 22, name: "Gryfne Szanse", type: "chance", price: 0, color: null, desc: "Ciągnij kartę szansy." },
+            // TOP SIDE (21 -> 30)
+            { id: 21, name: "Huta Pokój", type: "property", district: "Nowy Bytom", price: 220, rent: 18, color: "#ef4444", housePrice: 150 },
+            { id: 22, name: "Gryfne Szanse", type: "chance", price: 0, desc: "Karta Gryfnej Szansy." },
             { id: 23, name: "Urząd Miasta", type: "property", district: "Nowy Bytom", price: 220, rent: 18, color: "#ef4444", housePrice: 150 },
             { id: 24, name: "Ratusz Miejski", type: "property", district: "Nowy Bytom", price: 240, rent: 20, color: "#ef4444", housePrice: 150 },
-            { id: 25, name: "Przystanek Kochłowice", type: "station", price: 200, rent: 25, color: "#64748b", desc: "Pętla autobusowa." },
+            { id: 25, name: "Pętla Kochłowice", type: "station", price: 200, rent: 25, color: "#64748b", desc: "Przystanek autobusowy." },
             { id: 26, name: "Osiedle Ficinus", type: "property", district: "Wirek", price: 260, rent: 22, color: "#eab308", housePrice: 150 },
             { id: 27, name: "C.H. Plaza Wirek", type: "property", district: "Wirek", price: 260, rent: 22, color: "#eab308", housePrice: 150 },
-            { id: 28, name: "Elektrownia Halemba", type: "utility", price: 150, color: "#f59e0b", desc: "Dostawca prądu." },
+            { id: 28, name: "Elektrownia Halemba", type: "utility", price: 150, color: "#f59e0b", desc: "Dostawca energii." },
             { id: 29, name: "Targowisko Wirek", type: "property", district: "Wirek", price: 280, rent: 24, color: "#eab308", housePrice: 150 },
-            { id: 30, name: "IDŹ DO WIĘZIENIA", type: "gotojail", price: 0, color: null, desc: "Jedziesz prosto do aresztu!" },
+            { id: 30, name: "IDŹ DO WIĘZIENIA", type: "gotojail", price: 0, desc: "Lądujesz prosto w areszcie!" },
 
-            // RIGHT SIDE (31 - 39)
-            { id: 31, name: "Kopalnia Bielszowice", type: "property", district: "Bielszowice", price: 300, rent: 26, color: "#10b981", housePrice: 200 },
+            // RIGHT SIDE (31 -> 39)
+            { id: 31, name: "KWK Bielszowice", type: "property", district: "Bielszowice", price: 300, rent: 26, color: "#10b981", housePrice: 200 },
             { id: 32, name: "Park Strzelnica", type: "property", district: "Bielszowice", price: 300, rent: 26, color: "#10b981", housePrice: 200 },
-            { id: 33, name: "Kasa Dzielnicowa", type: "chest", price: 0, color: null, desc: "Bierz kartę ze Śląskiej Kasy." },
+            { id: 33, name: "Kasa Dzielnicowa", type: "chest", price: 0, desc: "Bierz kartę ze Śląskiej Kasy." },
             { id: 34, name: "Szyb Chrobry", type: "property", district: "Bielszowice", price: 320, rent: 28, color: "#10b981", housePrice: 200 },
-            { id: 35, name: "Przystanek Halemba", type: "station", price: 200, rent: 25, color: "#64748b", desc: "Węzeł przesiadkowy." },
-            { id: 36, name: "Gryfne Szanse", type: "chance", price: 0, color: null, desc: "Ciągnij kartę szansy." },
-            { id: 37, name: "Kopalnia Halemba", type: "property", district: "Halemba", price: 350, rent: 35, color: "#1e3a8a", housePrice: 200 },
-            { id: 38, name: "Podatek Wydobywczy", type: "tax", price: 100, color: null, desc: "Podatek od zasobów." },
+            { id: 35, name: "Pętla Halemba", type: "station", price: 200, rent: 25, color: "#64748b", desc: "Przystanek autobusowy." },
+            { id: 36, name: "Gryfne Szanse", type: "chance", price: 0, desc: "Karta Gryfnej Szansy." },
+            { id: 37, name: "KWK Halemba", type: "property", district: "Halemba", price: 350, rent: 35, color: "#1e3a8a", housePrice: 200 },
+            { id: 38, name: "Podatek Ekologiczny", type: "tax", price: 100, desc: "Zapłać 100 PLN opłaty." },
             { id: 39, name: "Aquadrom Halemba", type: "property", district: "Halemba", price: 400, rent: 50, color: "#1e3a8a", housePrice: 200 }
         ];
 
-        // Auth init
-        window.addEventListener('DOMContentLoaded', async () => {
-            renderBoardSkeleton();
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (err) {
-                console.error("Auth error:", err);
-            }
+        let selectedColor = '#ef4444';
+        let currentRoomCode = '';
+        let myPeerId = '';
+        let peer = null;
+        let connections = [];
+        let hostConn = null;
+        let isHost = false;
 
-            onAuthStateChanged(auth, (u) => { currentUser = u; });
+        let gameState = {
+            players: [],
+            turnIndex: 0,
+            dice: [1, 1],
+            hasRolled: false,
+            properties: {},
+            logs: ["Gra zainicjowana."],
+            tradeProposal: null,
+            isOnline: false,
+            gameStarted: false
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderBoardSkeleton();
         });
 
-        window.selectColor = function(color) {
+        function selectColor(color) {
             selectedColor = color;
             document.querySelectorAll('.color-opt').forEach(btn => {
                 btn.classList.remove('border-white');
@@ -469,143 +435,303 @@
                     btn.classList.add('border-white');
                 }
             });
-        };
-
-        window.showJoinInput = function() {
-            document.getElementById('join-room-container').classList.toggle('hidden');
-        };
-
-        function getRoomRef(code) {
-            return doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
         }
 
-        // CREATE GAME ROOM
-        window.createNewGame = async function() {
-            const nameInput = document.getElementById('player-name-input').value.trim();
-            if (!nameInput) return alert('Wpisz swoją nazwę gracza!');
-            if (!currentUser) return alert('Łączenie z serwerem... Spróbuj ponownie.');
-
-            roomCode = Math.floor(100000 + Math.random() * 900000).toString();
-            const initialGameState = {
-                code: roomCode,
-                createdAt: Date.now(),
-                turnIndex: 0,
-                dice: [1, 1],
-                hasRolled: false,
-                players: [{
-                    id: currentUser.uid,
-                    name: nameInput,
-                    color: selectedColor,
-                    money: 1500,
-                    position: 0,
-                    inJail: false
-                }],
-                properties: {},
-                logs: [`[System] Gracz ${nameInput} stworzył pokój ${roomCode}.`],
-                tradeProposal: null
-            };
-
-            try {
-                await setDoc(getRoomRef(roomCode), initialGameState);
-                listenToRoom(roomCode);
-            } catch (err) {
-                console.error("Error creating room:", err);
-            }
-        };
-
-        // JOIN GAME ROOM
-        window.joinGame = async function() {
-            const nameInput = document.getElementById('player-name-input').value.trim();
-            const inputCode = document.getElementById('room-code-input').value.trim().toUpperCase();
-            if (!nameInput) return alert('Wpisz swoją nazwę gracza!');
-            if (!inputCode || inputCode.length !== 6) return alert('Wpisz poprawny 6-cyfrowy kod pokoju!');
-            if (!currentUser) return alert('Łączenie z serwerem...');
-
-            const ref = getRoomRef(inputCode);
-            const snap = await getDoc(ref);
-
-            if (!snap.exists()) return alert('Pokój o podanym kodzie nie istnieje!');
-
-            const data = snap.data();
-            const existingPlayer = data.players.find(p => p.id === currentUser.uid);
-
-            if (!existingPlayer) {
-                if (data.players.length >= 4) return alert('Pokój jest pełny (max 4 graczy).');
-                data.players.push({
-                    id: currentUser.uid,
-                    name: nameInput,
-                    color: selectedColor,
-                    money: 1500,
-                    position: 0,
-                    inJail: false
+        // --- NETWORK / PEERJS REALTIME MULTIPLAYER ---
+        function initPeer(customId = null) {
+            return new Promise((resolve, reject) => {
+                peer = customId ? new Peer(customId) : new Peer();
+                peer.on('open', (id) => {
+                    myPeerId = id;
+                    resolve(id);
                 });
-                data.logs.push(`[System] Gracz ${nameInput} dołączył do gry.`);
-                await setDoc(ref, data);
-            }
-
-            roomCode = inputCode;
-            listenToRoom(roomCode);
-        };
-
-        function listenToRoom(code) {
-            if (unsubRoom) unsubRoom();
-
-            document.getElementById('lobby-screen').classList.add('hidden');
-            document.getElementById('game-screen').classList.remove('hidden');
-            document.getElementById('room-info').classList.remove('hidden');
-            document.getElementById('display-room-code').innerText = code;
-
-            unsubRoom = onSnapshot(getRoomRef(code), (snap) => {
-                if (!snap.exists()) return;
-                gameState = snap.data();
-                renderGameState();
+                peer.on('error', (err) => {
+                    console.error("Peer error:", err);
+                    alert("Błąd połączenia sieciowego: " + err.type);
+                    reject(err);
+                });
             });
         }
 
-        // RENDER 11x11 SQUARE BOARD TILES AROUND PERIMETER
+        async function createNewOnlineGame() {
+            const name = document.getElementById('player-name-input').value.trim() || 'Karlik';
+            const randomCode = 'RUDA-' + Math.floor(1000 + Math.random() * 9000);
+            
+            try {
+                await initPeer(randomCode);
+                isHost = true;
+                currentRoomCode = randomCode;
+                gameState.isOnline = true;
+
+                gameState.players = [{
+                    id: myPeerId,
+                    name: name,
+                    color: selectedColor,
+                    money: 1500,
+                    position: 0,
+                    isBot: false
+                }];
+
+                peer.on('connection', (conn) => {
+                    connections.push(conn);
+                    conn.on('data', (data) => handleNetworkData(data, conn));
+                    conn.on('close', () => {
+                        gameState.players = gameState.players.filter(p => p.id !== conn.peer);
+                        broadcastState();
+                        renderLobbyPlayers();
+                    });
+                });
+
+                setupRoomLobbyUI(currentRoomCode);
+            } catch (e) {
+                console.warn("KOD zajęty, próba ponowna...", e);
+                createNewOnlineGame();
+            }
+        }
+
+        async function joinOnlineGame() {
+            const code = document.getElementById('join-room-code').value.trim().toUpperCase();
+            if (!code) return alert('Wpisz prawidłowy kod pokoju!');
+
+            const name = document.getElementById('player-name-input').value.trim() || 'Gracz';
+
+            try {
+                await initPeer();
+                isHost = false;
+                currentRoomCode = code;
+                gameState.isOnline = true;
+
+                hostConn = peer.connect(code);
+                hostConn.on('open', () => {
+                    hostConn.send({
+                        type: 'JOIN_LOBBY',
+                        player: {
+                            id: myPeerId,
+                            name: name,
+                            color: selectedColor,
+                            money: 1500,
+                            position: 0,
+                            isBot: false
+                        }
+                    });
+                });
+
+                hostConn.on('data', (data) => handleNetworkData(data));
+                setupRoomLobbyUI(currentRoomCode);
+
+                // Disable host controls for client
+                document.getElementById('btn-add-bot').classList.add('hidden');
+                document.getElementById('btn-remove-bot').classList.add('hidden');
+                document.getElementById('btn-start-room').classList.add('hidden');
+            } catch (e) {
+                alert("Nie udało się połączyć z pokojem: " + code);
+            }
+        }
+
+        function handleNetworkData(data, conn = null) {
+            if (data.type === 'JOIN_LOBBY' && isHost) {
+                if (gameState.players.length >= 4) {
+                    conn.send({ type: 'ERROR', msg: 'Pokój jest pełny!' });
+                    return;
+                }
+                gameState.players.push(data.player);
+                broadcastState();
+                renderLobbyPlayers();
+            } else if (data.type === 'SYNC_STATE') {
+                gameState = data.state;
+                if (gameState.gameStarted && document.getElementById('game-screen').classList.contains('hidden')) {
+                    launchRoomGame(false);
+                }
+                renderLobbyPlayers();
+                renderGameState();
+            } else if (data.type === 'ACTION' && isHost) {
+                // Execute action on host and sync
+                if (data.action === 'ROLL') rollDiceAction();
+                else if (data.action === 'END_TURN') endTurnAction();
+                else if (data.action === 'BUY') buyProperty(BOARD_TILES[data.tileId]);
+                else if (data.action === 'BUILD') buildHouse(BOARD_TILES[data.tileId]);
+                else if (data.action === 'TRADE_OFFER') handleIncomingTradeAction(data.trade);
+                else if (data.action === 'TRADE_ACCEPT') acceptTrade();
+                else if (data.action === 'TRADE_REJECT') rejectTrade();
+            }
+        }
+
+        function broadcastState() {
+            if (!isHost) return;
+            connections.forEach(c => {
+                if (c.open) c.send({ type: 'SYNC_STATE', state: gameState });
+            });
+            renderGameState();
+        }
+
+        function sendActionToHost(action, payload = {}) {
+            if (isHost) {
+                if (action === 'ROLL') rollDiceAction();
+                else if (action === 'END_TURN') endTurnAction();
+                else if (action === 'BUY') buyProperty(BOARD_TILES[payload.tileId]);
+                else if (action === 'BUILD') buildHouse(BOARD_TILES[payload.tileId]);
+                else if (action === 'TRADE_OFFER') handleIncomingTradeAction(payload.trade);
+                else if (action === 'TRADE_ACCEPT') acceptTrade();
+                else if (action === 'TRADE_REJECT') rejectTrade();
+            } else if (hostConn && hostConn.open) {
+                hostConn.send({ type: 'ACTION', action, ...payload });
+            }
+        }
+
+        function setupRoomLobbyUI(code) {
+            document.getElementById('room-code-val').innerText = code;
+            document.getElementById('display-room-code').innerText = code;
+            document.getElementById('room-status-badge').classList.remove('hidden');
+
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('room-lobby-screen').classList.remove('hidden');
+
+            renderLobbyPlayers();
+        }
+
+        function renderLobbyPlayers() {
+            const list = document.getElementById('lobby-players-list');
+            if (!list) return;
+            list.innerHTML = '';
+            gameState.players.forEach(p => {
+                list.innerHTML += `
+                    <div class="bg-slate-950 border border-slate-800 p-2.5 rounded-xl flex justify-between items-center text-xs">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 rounded-full" style="background-color: ${p.color}"></div>
+                            <span class="font-bold text-slate-200">${p.name} ${p.isBot ? '(Bot)' : ''} ${p.id === myPeerId ? '(Ty)' : ''}</span>
+                        </div>
+                        <span class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-emerald-400 font-mono font-bold">Połączono</span>
+                    </div>
+                `;
+            });
+        }
+
+        function addBotToRoom() {
+            if (!isHost || gameState.players.length >= 4) return;
+            const botNames = ['Zyga AI', 'Gucio AI', 'Pojda AI'];
+            const botColors = ['#10b981', '#f59e0b', '#8b5cf6'];
+            const idx = gameState.players.length;
+
+            gameState.players.push({
+                id: `bot-${idx}`,
+                name: botNames[idx - 1] || `Bot ${idx}`,
+                color: botColors[idx - 1] || '#38bdf8',
+                money: 1500,
+                position: 0,
+                isBot: true
+            });
+
+            broadcastState();
+            renderLobbyPlayers();
+        }
+
+        function removeBotFromRoom() {
+            if (!isHost) return;
+            const botIdx = gameState.players.findLastIndex(p => p.isBot);
+            if (botIdx !== -1) {
+                gameState.players.splice(botIdx, 1);
+                broadcastState();
+                renderLobbyPlayers();
+            }
+        }
+
+        function copyRoomCode() {
+            const dummy = document.createElement("input");
+            document.body.appendChild(dummy);
+            dummy.value = currentRoomCode;
+            dummy.select();
+            document.execCommand("copy");
+            document.body.removeChild(dummy);
+            alert(`Skopiowano kod pokoju online: ${currentRoomCode}`);
+        }
+
+        function launchRoomGame(shouldBroadcast = true) {
+            gameState.gameStarted = true;
+            document.getElementById('room-lobby-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+
+            if (isHost && shouldBroadcast) {
+                gameState.logs = [`[Pokój ${currentRoomCode}] Rozpoczęto grę online! Tura gracza: ${gameState.players[0].name}.`];
+                broadcastState();
+            }
+
+            renderGameState();
+        }
+
+        // QUICK LOCAL / BOT GAME
+        function startQuickGame(botCount) {
+            const name = document.getElementById('player-name-input').value.trim() || 'Karlik';
+            myPeerId = 'local-player-0';
+            
+            gameState.players = [{
+                id: myPeerId,
+                name: name,
+                color: selectedColor,
+                money: 1500,
+                position: 0,
+                isBot: false
+            }];
+
+            const botNames = ['Hanys AI', 'Zyga AI', 'Gucio AI'];
+            const botColors = ['#3b82f6', '#10b981', '#f59e0b'];
+
+            for (let i = 0; i < (botCount > 0 ? 3 : 1); i++) {
+                gameState.players.push({
+                    id: `local-player-${i+1}`,
+                    name: botCount > 0 ? botNames[i] : `Gracz ${i+2}`,
+                    color: botColors[i],
+                    money: 1500,
+                    position: 0,
+                    isBot: botCount > 0
+                });
+            }
+
+            gameState.isOnline = false;
+            gameState.turnIndex = 0;
+            gameState.hasRolled = false;
+            gameState.logs = [`Rozpoczęto grę lokalną! Tura gracza: ${gameState.players[0].name}.`];
+
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+
+            renderGameState();
+        }
+
+        // 11x11 GRID RENDER
         function renderBoardSkeleton() {
             const board = document.getElementById('board');
 
             BOARD_TILES.forEach((tile) => {
                 const el = document.createElement('div');
                 el.id = `tile-${tile.id}`;
-                el.className = `tile cursor-pointer transition`;
+                el.className = `tile cursor-pointer`;
                 el.onclick = () => selectTileForInfo(tile.id);
 
                 let gridArea = "";
                 if (tile.id >= 0 && tile.id <= 10) {
-                    // Bottom Row: Right to Left (0 is Bottom Right, 10 is Bottom Left)
                     gridArea = `11 / ${11 - tile.id}`;
-                    el.classList.add('bottom-tile');
                 } else if (tile.id > 10 && tile.id <= 20) {
-                    // Left Column: Bottom to Top (10 is Bottom Left, 20 is Top Left)
                     gridArea = `${11 - (tile.id - 10)} / 1`;
-                    el.classList.add('left-tile');
                 } else if (tile.id > 20 && tile.id <= 30) {
-                    // Top Row: Left to Right (20 is Top Left, 30 is Top Right)
                     gridArea = `1 / ${tile.id - 19}`;
-                    el.classList.add('top-tile');
                 } else if (tile.id > 30 && tile.id < 40) {
-                    // Right Column: Top to Bottom (30 is Top Right, 39 is Bottom Right adjacent to Start)
                     gridArea = `${tile.id - 29} / 11`;
-                    el.classList.add('right-tile');
                 }
 
                 el.style.gridArea = gridArea;
 
-                // Color header
-                let colorBar = '';
+                let colorHeader = '';
                 if (tile.color) {
                     const isHoriz = (tile.id >= 0 && tile.id <= 10) || (tile.id >= 20 && tile.id <= 30);
-                    colorBar = `<div class="${isHoriz ? 'color-bar-h' : 'color-bar-v'}" style="background-color: ${tile.color};"></div>`;
+                    colorHeader = `<div class="${isHoriz ? 'color-bar-bottom' : 'color-bar-left'}" style="background-color: ${tile.color};"></div>`;
                 }
 
                 el.innerHTML = `
-                    ${colorBar}
-                    <div class="p-1 flex flex-col justify-between items-center h-full w-full overflow-hidden leading-tight">
-                        <span class="font-bold text-[8px] md:text-[10px] truncate w-full">${tile.name}</span>
-                        ${tile.price ? `<span class="text-[8px] text-emerald-400 font-mono font-semibold">${tile.price} PLN</span>` : ''}
-                        <div id="houses-${tile.id}" class="flex gap-0.5 text-[8px] text-amber-400"></div>
+                    ${colorHeader}
+                    <div class="p-0.5 flex flex-col justify-between items-center h-full w-full overflow-hidden leading-tight">
+                        <span class="font-bold text-[8px] sm:text-[9px] truncate w-full">${tile.name}</span>
+                        ${tile.price ? `<span class="text-[7px] text-emerald-400 font-mono font-semibold">${tile.price} PLN</span>` : ''}
+                        <div id="houses-${tile.id}" class="flex gap-0.5 text-[7px] text-amber-400"></div>
                     </div>
                     <div id="pawns-${tile.id}" class="absolute inset-0 flex flex-wrap items-center justify-center gap-0.5 pointer-events-none p-0.5"></div>
                 `;
@@ -614,203 +740,194 @@
             });
         }
 
-        // RENDER GAME STATE
         function renderGameState() {
-            if (!gameState) return;
-
-            // Clear Pawns and Houses
             BOARD_TILES.forEach(t => {
-                const pawnsContainer = document.getElementById(`pawns-${t.id}`);
-                const housesContainer = document.getElementById(`houses-${t.id}`);
-                if (pawnsContainer) pawnsContainer.innerHTML = '';
-                if (housesContainer) housesContainer.innerHTML = '';
+                const pContainer = document.getElementById(`pawns-${t.id}`);
+                const hContainer = document.getElementById(`houses-${t.id}`);
+                if (pContainer) pContainer.innerHTML = '';
+                if (hContainer) hContainer.innerHTML = '';
             });
 
-            // Render Pawns and Player Sidebar List
-            const playersList = document.getElementById('players-list');
-            playersList.innerHTML = '';
-            document.getElementById('player-count').innerText = `${gameState.players.length}/4`;
+            // Pawns & Player list
+            const pList = document.getElementById('players-list');
+            if (pList) {
+                pList.innerHTML = '';
+                document.getElementById('player-count').innerText = `${gameState.players.length}/4`;
 
-            gameState.players.forEach((player, idx) => {
-                const pawnsContainer = document.getElementById(`pawns-${player.position}`);
-                if (pawnsContainer) {
+                gameState.players.forEach((p, idx) => {
+                    const pContainer = document.getElementById(`pawns-${p.position}`);
+                    if (pContainer) {
+                        const badge = document.createElement('div');
+                        badge.className = 'pawn-badge';
+                        badge.style.backgroundColor = p.color;
+                        badge.innerText = p.name.charAt(0).toUpperCase();
+                        pContainer.appendChild(badge);
+                    }
+
+                    const isTurn = idx === gameState.turnIndex;
                     const pEl = document.createElement('div');
-                    pEl.className = 'pawn';
-                    pEl.style.backgroundColor = player.color;
-                    pEl.innerText = player.name.charAt(0).toUpperCase();
-                    pawnsContainer.appendChild(pEl);
-                }
-
-                const isCurrent = idx === gameState.turnIndex;
-                const pItem = document.createElement('div');
-                pItem.className = `p-2.5 rounded-xl border flex justify-between items-center ${isCurrent ? 'bg-amber-500/10 border-amber-500' : 'bg-slate-950 border-slate-800'}`;
-                pItem.innerHTML = `
-                    <div class="flex items-center space-x-2">
-                        <div class="w-3 h-3 rounded-full" style="background-color: ${player.color}"></div>
-                        <div>
-                            <span class="text-xs font-bold ${isCurrent ? 'text-amber-300' : 'text-slate-200'}">${player.name} ${player.id === currentUser?.uid ? '(Ty)' : ''}</span>
-                            ${player.inJail ? '<span class="text-[9px] text-red-400 ml-1">(Areszt)</span>' : ''}
+                    pEl.className = `p-2 rounded-xl border flex justify-between items-center ${isTurn ? 'bg-amber-500/10 border-amber-500' : 'bg-slate-950 border-slate-800'}`;
+                    pEl.innerHTML = `
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 rounded-full" style="background-color: ${p.color}"></div>
+                            <span class="text-xs font-bold ${isTurn ? 'text-amber-300' : 'text-slate-200'}">${p.name} ${p.isBot ? '(Bot)' : ''} ${p.id === myPeerId ? '(Ty)' : ''}</span>
                         </div>
-                    </div>
-                    <span class="font-mono text-xs font-bold text-emerald-400">${player.money} PLN</span>
-                `;
-                playersList.appendChild(pItem);
-            });
+                        <span class="font-mono text-xs font-bold text-emerald-400">${p.money} PLN</span>
+                    `;
+                    pList.appendChild(pEl);
+                });
+            }
 
-            // Render Ownership Borders & House Icons
-            Object.entries(gameState.properties || {}).forEach(([tileId, prop]) => {
-                const tileEl = document.getElementById(`tile-${tileId}`);
-                const housesContainer = document.getElementById(`houses-${tileId}`);
+            // Houses & Borders
+            Object.entries(gameState.properties || {}).forEach(([tId, prop]) => {
+                const tileEl = document.getElementById(`tile-${tId}`);
+                const hContainer = document.getElementById(`houses-${tId}`);
                 const owner = gameState.players.find(p => p.id === prop.ownerId);
 
                 if (tileEl && owner) {
                     tileEl.style.borderColor = owner.color;
                     tileEl.style.borderWidth = '2px';
                 }
-                if (housesContainer && prop.houses > 0) {
-                    let housesHtml = '';
+                if (hContainer && prop.houses > 0) {
+                    let hHtml = '';
                     if (prop.houses === 5) {
-                        housesHtml = '<i class="fa-solid fa-hotel text-red-500" title="Hotel"></i>';
+                        hHtml = '<i class="fa-solid fa-hotel text-red-500"></i>';
                     } else {
                         for (let i = 0; i < prop.houses; i++) {
-                            housesHtml += '<i class="fa-solid fa-house text-emerald-400"></i>';
+                            hHtml += '<i class="fa-solid fa-house text-emerald-400"></i>';
                         }
                     }
-                    housesContainer.innerHTML = housesHtml;
+                    hContainer.innerHTML = hHtml;
                 }
             });
 
-            // Turn Info
-            const activePlayer = gameState.players[gameState.turnIndex];
-            const isMyTurn = activePlayer && activePlayer.id === currentUser?.uid;
+            const curPlayer = gameState.players[gameState.turnIndex];
+            const isMyTurn = curPlayer && curPlayer.id === myPeerId;
 
-            document.getElementById('current-player-name').innerText = activePlayer ? activePlayer.name : '-';
-            document.getElementById('current-player-name').style.color = activePlayer ? activePlayer.color : '#f8fafc';
+            document.getElementById('current-player-name').innerText = curPlayer ? curPlayer.name : '-';
+            document.getElementById('current-player-name').style.color = curPlayer ? curPlayer.color : '#f8fafc';
 
             document.getElementById('btn-roll').disabled = !isMyTurn || gameState.hasRolled;
             document.getElementById('btn-end-turn').disabled = !isMyTurn || !gameState.hasRolled;
 
-            if (gameState.dice) {
-                document.getElementById('dice-1').innerText = gameState.dice[0];
-                document.getElementById('dice-2').innerText = gameState.dice[1];
-            }
+            document.getElementById('dice-1').innerText = gameState.dice[0];
+            document.getElementById('dice-2').innerText = gameState.dice[1];
 
             const logBox = document.getElementById('game-log');
-            logBox.innerHTML = gameState.logs.slice().reverse().map(l => `<div>${l}</div>`).join('');
+            if (logBox) {
+                logBox.innerHTML = gameState.logs.slice().reverse().map(l => `<div>${l}</div>`).join('');
+            }
 
-            if (gameState.tradeProposal && gameState.tradeProposal.targetId === currentUser?.uid) {
-                showIncomingTradeModal(gameState.tradeProposal);
-            } else {
-                document.getElementById('incoming-trade-modal').classList.add('hidden');
+            // Check incoming trade proposals
+            if (gameState.tradeProposal && gameState.tradeProposal.targetId === myPeerId) {
+                showIncomingModal(gameState.tradeProposal);
+            }
+
+            // Trigger Bot turn if Host
+            if (isHost && curPlayer && curPlayer.isBot && !gameState.hasRolled) {
+                setTimeout(botPlayTurn, 800);
             }
         }
 
-        // ROLL DICE ACTION
-        window.rollDiceAction = async function() {
-            if (!gameState || !currentUser) return;
-            const activePlayer = gameState.players[gameState.turnIndex];
-            if (activePlayer.id !== currentUser.uid || gameState.hasRolled) return;
+        function rollDiceAction() {
+            if (!isHost && gameState.isOnline) {
+                sendActionToHost('ROLL');
+                return;
+            }
+            if (gameState.hasRolled) return;
 
-            const d1El = document.getElementById('dice-1');
-            const d2El = document.getElementById('dice-2');
-            d1El.classList.add('rolling');
-            d2El.classList.add('rolling');
+            const d1 = Math.floor(Math.random() * 6) + 1;
+            const d2 = Math.floor(Math.random() * 6) + 1;
+            const moveSum = d1 + d2;
 
-            setTimeout(async () => {
-                d1El.classList.remove('rolling');
-                d2El.classList.remove('rolling');
+            let p = gameState.players[gameState.turnIndex];
+            let oldPos = p.position;
+            let newPos = (oldPos + moveSum) % 40;
 
-                const d1 = Math.floor(Math.random() * 6) + 1;
-                const d2 = Math.floor(Math.random() * 6) + 1;
-                const moveSum = d1 + d2;
+            let bonus = "";
+            if (newPos < oldPos) {
+                p.money += 200;
+                bonus = " (+200 PLN za przejazd przez Start)";
+            }
 
-                let player = gameState.players[gameState.turnIndex];
-                let oldPos = player.position;
-                let newPos = (oldPos + moveSum) % 40; // Loop continuous around 40 tiles
+            p.position = newPos;
+            gameState.dice = [d1, d2];
+            gameState.hasRolled = true;
 
-                let bonusLog = "";
-                if (newPos < oldPos) {
-                    player.money += 200;
-                    bonusLog = " (+200 PLN za przejazd przez START)";
-                }
+            const tile = BOARD_TILES[newPos];
+            gameState.logs.push(`[Ruch] ${p.name} wyrzucił ${d1}+${d2}=${moveSum} -> ${tile.name}${bonus}`);
 
-                player.position = newPos;
-                gameState.dice = [d1, d2];
-                gameState.hasRolled = true;
+            handleTileLanding(p, tile);
 
-                const tile = BOARD_TILES[newPos];
-                let logMsg = `${player.name} wyrzucił ${d1}+${d2}=${moveSum} i stanął na: ${tile.name}.${bonusLog}`;
+            if (gameState.isOnline && isHost) broadcastState();
+            else renderGameState();
 
-                handleTileLanding(player, tile, gameState);
-                gameState.logs.push(`[Ruch] ${logMsg}`);
+            selectTileForInfo(newPos);
+        }
 
-                await setDoc(getRoomRef(roomCode), gameState);
-                selectTileForInfo(newPos);
-            }, 400);
-        };
-
-        function handleTileLanding(player, tile, state) {
-            const propState = state.properties[tile.id];
-
+        function handleTileLanding(p, tile) {
             if (tile.type === 'gotojail') {
-                player.position = 10;
-                player.inJail = true;
-                state.logs.push(`[Areszt] ${player.name} został wysłany do Aresztu!`);
+                p.position = 10;
+                gameState.logs.push(`[Areszt] ${p.name} ląduje w Więzieniu!`);
                 return;
             }
 
             if (tile.type === 'tax') {
-                player.money = Math.max(0, player.money - tile.price);
-                state.logs.push(`[Podatek] ${player.name} zapłacił ${tile.price} PLN opłaty miejskiej.`);
+                p.money = Math.max(0, p.money - tile.price);
+                gameState.logs.push(`[Podatek] ${p.name} płaci ${tile.price} PLN opłaty miejskiej.`);
                 return;
             }
 
-            if (propState && propState.ownerId !== player.id) {
-                const owner = state.players.find(p => p.id === propState.ownerId);
+            const prop = gameState.properties[tile.id];
+            if (prop && prop.ownerId !== p.id) {
+                const owner = gameState.players.find(x => x.id === prop.ownerId);
                 if (owner) {
-                    let rent = calculateRent(tile, propState, state);
-                    const paid = Math.min(player.money, rent);
-                    player.money -= paid;
+                    let rent = calculateRent(tile, prop);
+                    const paid = Math.min(p.money, rent);
+                    p.money -= paid;
                     owner.money += paid;
-                    state.logs.push(`[Czynsz] ${player.name} zapłacił ${paid} PLN dla ${owner.name} na polu ${tile.name}.`);
+                    gameState.logs.push(`[Czynsz] ${p.name} zapłacił ${paid} PLN opłaty postojowej dla ${owner.name}.`);
                 }
             }
         }
 
-        function calculateRent(tile, propState, state) {
+        function calculateRent(tile, prop) {
             if (!tile.rent) return 0;
             let base = tile.rent;
 
             if (tile.district) {
                 const districtTiles = BOARD_TILES.filter(t => t.district === tile.district);
-                const ownsAll = districtTiles.every(t => state.properties[t.id] && state.properties[t.id].ownerId === propState.ownerId);
+                const ownsAll = districtTiles.every(t => gameState.properties[t.id] && gameState.properties[t.id].ownerId === prop.ownerId);
 
                 // Double rent for full district set without houses
-                if (ownsAll && (!propState.houses || propState.houses === 0)) {
+                if (ownsAll && (!prop.houses || prop.houses === 0)) {
                     base *= 2;
                 }
             }
 
-            if (propState.houses > 0) {
-                base += propState.houses * (tile.rent * 2);
+            if (prop.houses > 0) {
+                base += prop.houses * (tile.rent * 2);
             }
 
             return base;
         }
 
-        window.endTurnAction = async function() {
-            if (!gameState || !currentUser) return;
-            const activePlayer = gameState.players[gameState.turnIndex];
-            if (activePlayer.id !== currentUser.uid || !gameState.hasRolled) return;
+        function endTurnAction() {
+            if (!isHost && gameState.isOnline) {
+                sendActionToHost('END_TURN');
+                return;
+            }
+            if (!gameState.hasRolled) return;
 
             gameState.turnIndex = (gameState.turnIndex + 1) % gameState.players.length;
             gameState.hasRolled = false;
-            gameState.logs.push(`[Tura] Kolej gracza: ${gameState.players[gameState.turnIndex].name}.`);
+            gameState.logs.push(`[Tura] Kolej na gracza: ${gameState.players[gameState.turnIndex].name}.`);
 
-            await setDoc(getRoomRef(roomCode), gameState);
-        };
+            if (gameState.isOnline && isHost) broadcastState();
+            else renderGameState();
+        }
 
-        window.selectTileForInfo = function(tileId) {
+        function selectTileForInfo(tileId) {
             const tile = BOARD_TILES[tileId];
             if (!tile) return;
 
@@ -819,211 +936,234 @@
             document.getElementById('tile-price-tag').innerText = tile.price ? `${tile.price} PLN` : '';
             document.getElementById('tile-desc').innerText = tile.desc || `Czynsz bazowy: ${tile.rent || 0} PLN. Koszt rozbudowy: ${tile.housePrice || 0} PLN.`;
 
-            const actionsContainer = document.getElementById('tile-actions');
-            actionsContainer.innerHTML = '';
+            const actionsBox = document.getElementById('tile-actions');
+            actionsBox.innerHTML = '';
 
-            if (!gameState) return;
-
-            const myPlayer = gameState.players.find(p => p.id === currentUser?.uid);
-            const isMyTurn = gameState.players[gameState.turnIndex]?.id === currentUser?.uid;
+            const curPlayer = gameState.players[gameState.turnIndex];
             const propState = gameState.properties[tile.id];
 
-            // BUY OPTION
-            if (tile.price && !propState && isMyTurn && myPlayer.position === tile.id && gameState.hasRolled) {
+            const isMyTurn = curPlayer && curPlayer.id === myPeerId;
+
+            // BUY BUTTON
+            if (tile.price && !propState && curPlayer.position === tile.id && gameState.hasRolled && isMyTurn) {
                 const buyBtn = document.createElement('button');
-                buyBtn.className = 'w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-xs transition shadow';
+                buyBtn.className = 'w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 rounded-lg text-xs transition';
                 buyBtn.innerHTML = `<i class="fa-solid fa-cart-shopping mr-1"></i> KUP POSIADŁOŚĆ (${tile.price} PLN)`;
-                buyBtn.onclick = () => buyPropertyAction(tile);
-                actionsContainer.appendChild(buyBtn);
+                buyBtn.onclick = () => buyProperty(tile);
+                actionsBox.appendChild(buyBtn);
             }
 
-            // HOUSE UPGRADE OPTION
-            // Strict condition: Must own full district AND landed on this tile AGAIN!
-            if (propState && propState.ownerId === currentUser?.uid && isMyTurn && myPlayer.position === tile.id && gameState.hasRolled) {
+            // UPGRADE / BUILD HOUSE BUTTON
+            // STRICT CONDITION: Must own FULL district AND landed on this property AGAIN!
+            if (propState && propState.ownerId === curPlayer.id && curPlayer.position === tile.id && gameState.hasRolled && isMyTurn) {
                 const districtTiles = BOARD_TILES.filter(t => t.district === tile.district);
-                const ownsFullDistrict = districtTiles.length > 0 && districtTiles.every(t => gameState.properties[t.id] && gameState.properties[t.id].ownerId === currentUser.uid);
+                const ownsFullDistrict = districtTiles.length > 0 && districtTiles.every(t => gameState.properties[t.id] && gameState.properties[t.id].ownerId === curPlayer.id);
 
                 if (ownsFullDistrict && (propState.houses || 0) < 5) {
-                    const upgradeBtn = document.createElement('button');
-                    upgradeBtn.className = 'w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-2 rounded-xl text-xs transition shadow';
-                    upgradeBtn.innerHTML = `<i class="fa-solid fa-house-medical mr-1"></i> ROZBUDUJ DOM/HOTEL (${tile.housePrice} PLN)`;
-                    upgradeBtn.onclick = () => buildHouseAction(tile);
-                    actionsContainer.appendChild(upgradeBtn);
-                } else if (!ownsFullDistrict) {
+                    const buildBtn = document.createElement('button');
+                    buildBtn.className = 'w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-1.5 rounded-lg text-xs transition';
+                    buildBtn.innerHTML = `<i class="fa-solid fa-house-chimney mr-1"></i> ROZBUDUJ DOM/HOTEL (${tile.housePrice} PLN)`;
+                    buildBtn.onclick = () => buildHouse(tile);
+                    actionsBox.appendChild(buildBtn);
+                } else if (!ownsFullDistrict && tile.district) {
                     const note = document.createElement('div');
-                    note.className = 'text-[10px] text-amber-400 italic';
-                    note.innerText = 'Wymagany komplet całej dzielnicy, aby budować domki!';
-                    actionsContainer.appendChild(note);
+                    note.className = 'text-[10px] text-amber-400 italic mt-1';
+                    note.innerText = 'Musisz posiadać pełny komplet całej dzielnicy, by tu budować!';
+                    actionsBox.appendChild(note);
                 }
             }
-        };
+        }
 
-        async function buyPropertyAction(tile) {
-            const player = gameState.players.find(p => p.id === currentUser.uid);
-            if (player.money < tile.price) return alert('Brak wystarczających środków!');
+        function buyProperty(tile) {
+            if (!isHost && gameState.isOnline) {
+                sendActionToHost('BUY', { tileId: tile.id });
+                return;
+            }
 
-            player.money -= tile.price;
-            if (!gameState.properties) gameState.properties = {};
-            gameState.properties[tile.id] = { ownerId: player.id, houses: 0 };
-            gameState.logs.push(`[Zakup] ${player.name} zakupił pole ${tile.name} za ${tile.price} PLN.`);
+            const p = gameState.players[gameState.turnIndex];
+            if (p.money < tile.price) return alert('Za mało środków!');
 
-            await setDoc(getRoomRef(roomCode), gameState);
+            p.money -= tile.price;
+            gameState.properties[tile.id] = { ownerId: p.id, houses: 0 };
+            gameState.logs.push(`[Zakup] ${p.name} zakupił pole ${tile.name} za ${tile.price} PLN.`);
+
+            if (gameState.isOnline && isHost) broadcastState();
+            else renderGameState();
+
             selectTileForInfo(tile.id);
         }
 
-        async function buildHouseAction(tile) {
-            const player = gameState.players.find(p => p.id === currentUser.uid);
-            const propState = gameState.properties[tile.id];
+        function buildHouse(tile) {
+            if (!isHost && gameState.isOnline) {
+                sendActionToHost('BUILD', { tileId: tile.id });
+                return;
+            }
 
-            if (player.money < tile.housePrice) return alert('Brak wystarczających środków!');
+            const p = gameState.players[gameState.turnIndex];
+            const prop = gameState.properties[tile.id];
 
-            player.money -= tile.housePrice;
-            propState.houses = (propState.houses || 0) + 1;
-            
-            const bName = propState.houses === 5 ? 'Hotel' : 'Dom';
-            gameState.logs.push(`[Rozbudowa] ${player.name} wybudował ${bName} na polu ${tile.name}!`);
+            if (p.money < tile.housePrice) return alert('Za mało środków na rozbudowę!');
 
-            await setDoc(getRoomRef(roomCode), gameState);
+            p.money -= tile.housePrice;
+            prop.houses = (prop.houses || 0) + 1;
+
+            const name = prop.houses === 5 ? 'Hotel' : 'Dom';
+            gameState.logs.push(`[Rozbudowa] ${p.name} wybudował ${name} na polu ${tile.name}!`);
+
+            if (gameState.isOnline && isHost) broadcastState();
+            else renderGameState();
+
             selectTileForInfo(tile.id);
+        }
+
+        // SIMPLE AI FOR BOTS
+        function botPlayTurn() {
+            if (gameState.hasRolled) return;
+            rollDiceAction();
+
+            setTimeout(() => {
+                const p = gameState.players[gameState.turnIndex];
+                const tile = BOARD_TILES[p.position];
+                const prop = gameState.properties[tile.id];
+
+                if (tile.price && !prop && p.money >= tile.price + 150) {
+                    buyProperty(tile);
+                }
+
+                setTimeout(endTurnAction, 600);
+            }, 500);
         }
 
         // TRADE SYSTEM
-        window.openTradeModal = function() {
-            if (!gameState) return;
-            const modal = document.getElementById('trade-modal');
-            modal.classList.remove('hidden');
+        function openTradeModal() {
+            document.getElementById('trade-modal').classList.remove('hidden');
+            const sel = document.getElementById('trade-target-player');
+            sel.innerHTML = '';
 
-            const targetSelect = document.getElementById('trade-target-player');
-            targetSelect.innerHTML = '';
-
-            gameState.players.filter(p => p.id !== currentUser.uid).forEach(p => {
+            const cur = gameState.players[gameState.turnIndex];
+            gameState.players.filter(p => p.id !== cur.id).forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p.id;
                 opt.innerText = p.name;
-                targetSelect.appendChild(opt);
+                sel.appendChild(opt);
             });
 
-            updateTradeModalProperties();
-            targetSelect.onchange = updateTradeModalProperties;
-        };
+            updateTradeProps();
+            sel.onchange = updateTradeProps;
+        }
 
-        window.closeTradeModal = function() {
+        function closeTradeModal() {
             document.getElementById('trade-modal').classList.add('hidden');
-        };
+        }
 
-        function updateTradeModalProperties() {
-            const myContainer = document.getElementById('trade-my-properties');
-            const targetContainer = document.getElementById('trade-target-properties');
+        function updateTradeProps() {
+            const cur = gameState.players[gameState.turnIndex];
             const targetId = document.getElementById('trade-target-player').value;
 
-            myContainer.innerHTML = '';
-            targetContainer.innerHTML = '';
+            const myBox = document.getElementById('trade-my-properties');
+            const targetBox = document.getElementById('trade-target-properties');
 
-            Object.entries(gameState.properties || {}).forEach(([tileId, prop]) => {
-                const tile = BOARD_TILES[tileId];
-                if (prop.ownerId === currentUser.uid) {
-                    myContainer.innerHTML += `
-                        <label class="flex items-center space-x-1">
-                            <input type="checkbox" value="${tileId}" class="my-prop-cb">
-                            <span class="truncate">${tile.name}</span>
-                        </label>`;
+            myBox.innerHTML = '';
+            targetBox.innerHTML = '';
+
+            Object.entries(gameState.properties || {}).forEach(([tId, prop]) => {
+                const tile = BOARD_TILES[tId];
+                if (prop.ownerId === cur.id) {
+                    myBox.innerHTML += `<label class="block"><input type="checkbox" value="${tId}" class="my-cb"> ${tile.name}</label>`;
                 } else if (prop.ownerId === targetId) {
-                    targetContainer.innerHTML += `
-                        <label class="flex items-center space-x-1">
-                            <input type="checkbox" value="${tileId}" class="target-prop-cb">
-                            <span class="truncate">${tile.name}</span>
-                        </label>`;
+                    targetBox.innerHTML += `<label class="block"><input type="checkbox" value="${tId}" class="target-cb"> ${tile.name}</label>`;
                 }
             });
         }
 
-        window.sendTradeOffer = async function() {
+        function sendTradeOffer() {
+            const cur = gameState.players[gameState.turnIndex];
             const targetId = document.getElementById('trade-target-player').value;
-            if (!targetId) return alert('Wybierz gracza do wymiany!');
 
             const myMoney = parseInt(document.getElementById('trade-my-money').value) || 0;
             const targetMoney = parseInt(document.getElementById('trade-target-money').value) || 0;
 
-            const myProps = Array.from(document.querySelectorAll('.my-prop-cb:checked')).map(cb => parseInt(cb.value));
-            const targetProps = Array.from(document.querySelectorAll('.target-prop-cb:checked')).map(cb => parseInt(cb.value));
+            const myProps = Array.from(document.querySelectorAll('.my-cb:checked')).map(cb => parseInt(cb.value));
+            const targetProps = Array.from(document.querySelectorAll('.target-cb:checked')).map(cb => parseInt(cb.value));
 
-            const sender = gameState.players.find(p => p.id === currentUser.uid);
-            if (sender.money < myMoney) return alert('Nie masz wystarczająco dużo gotówki!');
-
-            gameState.tradeProposal = {
-                senderId: currentUser.uid,
-                senderName: sender.name,
+            const trade = {
+                senderId: cur.id,
+                senderName: cur.name,
                 targetId: targetId,
                 offeredMoney: myMoney,
                 requestedMoney: targetMoney,
-                offeredProperties: myProps,
-                requestedProperties: targetProps
+                offeredProps: myProps,
+                requestedProps: targetProps
             };
 
-            gameState.logs.push(`[Handel] ${sender.name} złożył propozycję wymiany.`);
-            await setDoc(getRoomRef(roomCode), gameState);
             closeTradeModal();
-            alert('Wysłano propozycję wymiany!');
-        };
 
-        function showIncomingTradeModal(proposal) {
+            if (!isHost && gameState.isOnline) {
+                sendActionToHost('TRADE_OFFER', { trade });
+            } else {
+                handleIncomingTradeAction(trade);
+            }
+        }
+
+        function handleIncomingTradeAction(trade) {
+            gameState.tradeProposal = trade;
+            if (gameState.isOnline && isHost) broadcastState();
+            else renderGameState();
+        }
+
+        function showIncomingModal(proposal) {
             const modal = document.getElementById('incoming-trade-modal');
             modal.classList.remove('hidden');
 
-            const myPropsText = proposal.requestedProperties.map(id => BOARD_TILES[id].name).join(', ') || 'brak';
-            const senderPropsText = proposal.offeredProperties.map(id => BOARD_TILES[id].name).join(', ') || 'brak';
-
-            document.getElementById('trade-proposal-text').innerHTML = `
-                <strong>${proposal.senderName}</strong> proponuje wymianę:<br><br>
-                <span class="text-emerald-400">Dostaniesz:</span> ${proposal.offeredMoney} PLN oraz: [${senderPropsText}]<br>
-                <span class="text-amber-400">Oddasz:</span> ${proposal.requestedMoney} PLN oraz: [${myPropsText}]
+            const text = document.getElementById('trade-proposal-text');
+            text.innerHTML = `
+                Gracz <strong>${proposal.senderName}</strong> proponuje wymianę:<br><br>
+                Dostaniesz: ${proposal.offeredMoney} PLN<br>
+                Oddasz: ${proposal.requestedMoney} PLN
             `;
         }
 
-        window.acceptTrade = async function() {
-            const proposal = gameState.tradeProposal;
-            if (!proposal) return;
+        function acceptTrade() {
+            if (!isHost && gameState.isOnline) {
+                sendActionToHost('TRADE_ACCEPT');
+                return;
+            }
 
-            const sender = gameState.players.find(p => p.id === proposal.senderId);
-            const target = gameState.players.find(p => p.id === proposal.targetId);
+            const prop = gameState.tradeProposal;
+            if (!prop) return;
 
-            sender.money = sender.money - proposal.offeredMoney + proposal.requestedMoney;
-            target.money = target.money - proposal.requestedMoney + proposal.offeredMoney;
+            const sender = gameState.players.find(p => p.id === prop.senderId);
+            const target = gameState.players.find(p => p.id === prop.targetId);
 
-            proposal.offeredProperties.forEach(id => {
-                if (gameState.properties[id]) gameState.properties[id].ownerId = target.id;
-            });
+            sender.money = sender.money - prop.offeredMoney + prop.requestedMoney;
+            target.money = target.money - prop.requestedMoney + prop.offeredMoney;
 
-            proposal.requestedProperties.forEach(id => {
-                if (gameState.properties[id]) gameState.properties[id].ownerId = sender.id;
-            });
+            prop.offeredProps.forEach(id => { if (gameState.properties[id]) gameState.properties[id].ownerId = target.id; });
+            prop.requestedProps.forEach(id => { if (gameState.properties[id]) gameState.properties[id].ownerId = sender.id; });
 
-            gameState.logs.push(`[Handel] Transakcja zaakceptowana przez obu graczy!`);
+            gameState.logs.push(`[Handel] Transakcja udana pomiędzy ${sender.name} i ${target.name}!`);
             gameState.tradeProposal = null;
 
-            await setDoc(getRoomRef(roomCode), gameState);
             document.getElementById('incoming-trade-modal').classList.add('hidden');
-        };
 
-        window.rejectTrade = async function() {
-            if (!gameState.tradeProposal) return;
+            if (gameState.isOnline && isHost) broadcastState();
+            else renderGameState();
+        }
+
+        function rejectTrade() {
+            if (!isHost && gameState.isOnline) {
+                sendActionToHost('TRADE_REJECT');
+                return;
+            }
+
             gameState.logs.push(`[Handel] Propozycja wymiany została odrzucona.`);
             gameState.tradeProposal = null;
 
-            await setDoc(getRoomRef(roomCode), gameState);
             document.getElementById('incoming-trade-modal').classList.add('hidden');
-        };
 
-        window.copyRoomCode = function() {
-            if (!roomCode) return;
-            const el = document.createElement('textarea');
-            el.value = roomCode;
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-            alert('Kod pokoju został skopiowany!');
-        };
+            if (gameState.isOnline && isHost) broadcastState();
+            else renderGameState();
+        }
     </script>
 </body>
 </html>
